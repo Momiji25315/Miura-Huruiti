@@ -1,61 +1,54 @@
 using System.Collections;
 using UnityEngine;
 
-// Rigidbodyコンポーネントが必須であることを示す
 [RequireComponent(typeof(Rigidbody))]
 public class PlayerMovement : MonoBehaviour
 {
     [Header("体力設定")]
-    [Tooltip("最大HP")]
     public float maxHealth = 100f;
-    [Tooltip("現在のHP（実行中に確認用）")]
     [SerializeField]
     private float currentHealth;
 
     [Header("移動設定")]
-    [Tooltip("キャラクターの通常移動速度")]
     public float moveSpeed = 5.0f;
-    [Tooltip("Shiftキーを押している間の移動速度")]
     public float sprintSpeed = 10.0f;
-    [Tooltip("キャラクターの回転速度")]
     public float rotationSpeed = 10.0f;
 
     [Header("ジャンプ設定")]
-    [Tooltip("ジャンプの強さ")]
     public float jumpForce = 7.0f;
 
     [Header("接地判定")]
-    [Tooltip("地面と認識するレイヤー")]
     public LayerMask groundLayer;
-    [Tooltip("接地判定の中心点（プレイヤーの足元に配置）")]
     public Transform groundCheck;
-    [Tooltip("接地判定の球体の半径")]
     public float groundCheckRadius = 0.2f;
 
     [Header("特殊アクション（Shiftキー）")]
-    [Tooltip("Shiftキーで表示/非表示を切り替える子オブジェクト")]
     public GameObject shiftObject;
-    [Tooltip("Shiftキーを押してからオブジェクトが表示されるまでの時間(秒)")]
     public float shiftDelay = 0.3f;
 
-    [Header("Noddy能力設定")]
-    [Tooltip("能力発動時の回復量")]
+    [Header("回復能力設定（Noddy）")]
     public float abilityHealAmount = 8f;
-    [Tooltip("能力発動中の操作不能時間")]
-    public float abilityDisableDuration = 2.5f;
-    [Tooltip("能力獲得時の色")]
-    public Color abilityColor = Color.magenta;
+    public float noddyAbilityDisableDuration = 2.5f;
+    public Color noddyAbilityColor = Color.magenta;
 
-    // --- 内部で使用する変数 ---
+    [Header("爆発能力設定（Bomber）")]
+    public float bomberAbilityDamage = 15f;
+    public float bomberAbilityRadius = 2f;
+    public float bomberAbilityDisableDuration = 2.0f;
+    public Color bomberAbilityColor = Color.black;
+    public GameObject bomberAbilityEffectPrefab;
+    public float bomberAbilityEffectDuration = 1.0f;
+
+    // --- 内部変数 ---
     private Rigidbody rb;
     private Vector3 moveInput;
     private bool isGrounded;
     private Coroutine showObjectCoroutine;
 
-    // Noddy能力関連の内部変数
     private Renderer playerRenderer;
     private Color originalColor;
     private bool hasNoddyAbility = false;
+    private bool hasBomberAbility = false;
     private bool controlsDisabled = false;
 
     void Awake()
@@ -70,10 +63,7 @@ public class PlayerMovement : MonoBehaviour
 
     void Start()
     {
-        if (shiftObject != null)
-        {
-            shiftObject.SetActive(false);
-        }
+        if (shiftObject != null) shiftObject.SetActive(false);
         currentHealth = maxHealth;
     }
 
@@ -97,47 +87,40 @@ public class PlayerMovement : MonoBehaviour
 
     private void HandleInput()
     {
-        // Noddy能力の入力
         if (hasNoddyAbility && Input.GetMouseButtonDown(0))
         {
             StartCoroutine(ActivateNoddyAbility());
             return;
         }
-        if (hasNoddyAbility && Input.GetMouseButtonDown(1))
+        else if (hasBomberAbility && Input.GetMouseButtonDown(0))
         {
-            DiscardNoddyAbility();
+            StartCoroutine(ActivateBomberAbility());
+            return;
         }
 
-        // 移動入力（ワールド座標基準）
+        if ((hasNoddyAbility || hasBomberAbility) && Input.GetMouseButtonDown(1))
+        {
+            DiscardAnyAbility();
+        }
+
         float moveX = Input.GetAxisRaw("Horizontal");
         float moveZ = Input.GetAxisRaw("Vertical");
-        moveInput = new Vector3(moveX, 0f, moveZ).normalized;
+        Vector3 cameraForward = Vector3.Scale(Camera.main.transform.forward, new Vector3(1, 0, 1)).normalized;
+        Vector3 moveDirection = cameraForward * moveZ + Camera.main.transform.right * moveX;
+        moveInput = moveDirection.normalized;
 
-        // ジャンプ入力
-        if (isGrounded && Input.GetKeyDown(KeyCode.Space))
-        {
-            Jump();
-        }
-
-        // Shiftキー入力
+        if (isGrounded && Input.GetKeyDown(KeyCode.Space)) Jump();
         HandleShiftObjectWithDelay();
-
-        // デバッグ用ダメージキー
-        if (Input.GetKeyDown(KeyCode.K))
-        {
-            TakeDamage(10);
-        }
+        if (Input.GetKeyDown(KeyCode.K)) TakeDamage(10);
     }
 
     private void MoveCharacter()
     {
-        // 移動
         float currentMoveSpeed = Input.GetKey(KeyCode.LeftShift) ? sprintSpeed : moveSpeed;
         Vector3 newVelocity = moveInput * currentMoveSpeed;
         newVelocity.y = rb.linearVelocity.y;
         rb.linearVelocity = newVelocity;
 
-        // 回転
         if (moveInput != Vector3.zero)
         {
             Quaternion targetRotation = Quaternion.LookRotation(moveInput);
@@ -151,36 +134,93 @@ public class PlayerMovement : MonoBehaviour
         rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
     }
 
-    // --- Noddy能力関連のメソッド ---
     public void GainNoddyAbility()
     {
-        if (hasNoddyAbility) return;
+        ResetAbilityState();
         hasNoddyAbility = true;
-        if (playerRenderer != null) playerRenderer.material.color = abilityColor;
-        Debug.Log("Noddyの能力を獲得した！ 左クリックで発動、右クリックで破棄できます。");
+        if (playerRenderer != null) playerRenderer.material.color = noddyAbilityColor;
+        Debug.Log("回復能力を獲得！");
+    }
+
+    public void GainBomberAbility()
+    {
+        ResetAbilityState();
+        hasBomberAbility = true;
+        if (playerRenderer != null) playerRenderer.material.color = bomberAbilityColor;
+        Debug.Log("爆発能力を獲得！");
     }
 
     private IEnumerator ActivateNoddyAbility()
     {
-        hasNoddyAbility = false;
         controlsDisabled = true;
         rb.linearVelocity = Vector3.zero;
-        Debug.Log("能力発動！ " + abilityDisableDuration + "秒間、操作不能になります...");
-        yield return new WaitForSeconds(abilityDisableDuration);
+        Debug.Log("回復能力発動！ " + noddyAbilityDisableDuration + "秒間、操作不能...");
+        yield return new WaitForSeconds(noddyAbilityDisableDuration);
         Heal(abilityHealAmount);
-        if (playerRenderer != null) playerRenderer.material.color = originalColor;
+        ResetAbilityState();
         controlsDisabled = false;
-        Debug.Log("HPが回復し、操作可能になりました。能力は失われました。");
+        Debug.Log("HPが回復し、操作可能になりました。");
     }
 
-    private void DiscardNoddyAbility()
+    private IEnumerator ActivateBomberAbility()
+    {
+        controlsDisabled = true;
+        rb.linearVelocity = Vector3.zero;
+        Debug.Log("爆発能力発動！ " + bomberAbilityDisableDuration + "秒間、操作不能...");
+        ExplodeWithAbility();
+        yield return new WaitForSeconds(bomberAbilityDisableDuration);
+        ResetAbilityState();
+        controlsDisabled = false;
+        Debug.Log("操作可能になりました。");
+    }
+
+    private void ExplodeWithAbility()
+    {
+        Debug.Log("BOOM! 範囲内の特定の敵にダメージを与えます。");
+
+        if (bomberAbilityEffectPrefab != null)
+        {
+            GameObject effect = Instantiate(bomberAbilityEffectPrefab, transform.position, Quaternion.identity);
+            float diameter = bomberAbilityRadius * 2f;
+            effect.transform.localScale = new Vector3(diameter, diameter, diameter);
+            Destroy(effect, bomberAbilityEffectDuration);
+        }
+
+        Collider[] collidersToDamage = Physics.OverlapSphere(transform.position, bomberAbilityRadius);
+        foreach (var col in collidersToDamage)
+        {
+            // --- ★★★ ここを修正しました ★★★ ---
+            // "Noddy"タグ または "Bomber"タグ を持つオブジェクトにダメージを与える
+            if (col.CompareTag("Noddy") || col.CompareTag("Bomber"))
+            {
+                if (col.TryGetComponent<EnemyAI>(out var enemy1))
+                {
+                    enemy1.TakeDamage(bomberAbilityDamage);
+                }
+                else if (col.TryGetComponent<FallingBomberAI>(out var enemy2))
+                {
+                    enemy2.TakeDamage(bomberAbilityDamage);
+                }
+            }
+        }
+    }
+
+    private void DiscardAnyAbility()
+    {
+        ResetAbilityState();
+        Debug.Log("能力を捨て、元の状態に戻りました。");
+    }
+
+    private void ResetAbilityState()
     {
         hasNoddyAbility = false;
-        if (playerRenderer != null) playerRenderer.material.color = originalColor;
-        Debug.Log("Noddyの能力を捨て、元の状態に戻りました。");
+        hasBomberAbility = false;
+        if (playerRenderer != null)
+        {
+            playerRenderer.material.color = originalColor;
+        }
     }
 
-    // --- HP・ダメージ関連のメソッド ---
     public void Heal(float amount)
     {
         currentHealth += amount;
@@ -202,7 +242,6 @@ public class PlayerMovement : MonoBehaviour
         gameObject.SetActive(false);
     }
 
-    // --- Shiftキー関連のメソッド ---
     private void HandleShiftObjectWithDelay()
     {
         if (shiftObject == null) return;

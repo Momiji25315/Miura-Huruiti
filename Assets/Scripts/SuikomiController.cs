@@ -12,20 +12,26 @@ public class SuikomiController : MonoBehaviour
 
         if (playerMovement == null)
         {
-            Debug.LogError("親オブジェクトに'PlayerMovement'スクリプトが見つかりません！");
+            Debug.LogError("親オブジェクトに'PlayerMovement'スクリプトが見つかりません！", this);
         }
     }
 
-    // 他のオブジェクトのトリガーに侵入した時に呼び出される
+    // 他のオブジェクトのトリガー（Is TriggerがオンのCollider）に侵入した時に呼び出される
     private void OnTriggerEnter(Collider other)
     {
-        // プレイヤーが有効で、侵入した相手のタグが "Noddy" の場合
-        if (playerMovement != null && other.CompareTag("Noddy"))
-        {
-            // PlayerMovementスクリプトの能力獲得メソッドを呼び出す
-            playerMovement.GainNoddyAbility();
+        // プレイヤーのスクリプトが見つかっていない場合は何もしない
+        if (playerMovement == null) return;
 
-            // 吸い込んだ "Noddy" オブジェクトを破壊する
+        // "Noddy"タグを吸い込んだら、回復能力を得る
+        if (other.CompareTag("Noddy"))
+        {
+            playerMovement.GainNoddyAbility();
+            Destroy(other.gameObject);
+        }
+        // "Bomber"タグを吸い込んだら、爆発能力を得る
+        else if (other.CompareTag("Bomber"))
+        {
+            playerMovement.GainBomberAbility();
             Destroy(other.gameObject);
         }
     }

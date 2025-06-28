@@ -18,10 +18,14 @@ public class FallingBomberAI : MonoBehaviour
     public GameObject explosionEffectPrefab;
     public float explosionDuration = 0.5f;
 
+    // --- 内部変数 ---
     private Transform playerTransform;
     private Rigidbody rb;
     private Vector3 initialPosition;
     private bool isSequenceStarted = false;
+    // --- ここから追加 ---
+    private int groundHitCount = 0; // 地面に接触した回数をカウントする変数
+    // --- 追加ここまで ---
 
     void Awake()
     {
@@ -52,12 +56,12 @@ public class FallingBomberAI : MonoBehaviour
 
     private IEnumerator FallSequenceCoroutine()
     {
-        Debug.Log("落下シーケンス開始！");
+        Debug.Log(gameObject.name + " 落下シーケンス開始！");
         yield return StartCoroutine(MoveToPosition(initialPosition + transform.forward * feintDistance, feintDuration));
         yield return StartCoroutine(MoveToPosition(initialPosition, feintDuration));
         yield return StartCoroutine(MoveToPosition(initialPosition + transform.forward * feintDistance, feintDuration));
 
-        Debug.Log("落下開始！");
+        Debug.Log(gameObject.name + " 落下開始！");
         rb.useGravity = true;
         rb.linearVelocity = Vector3.down * fallSpeed;
     }
@@ -84,26 +88,31 @@ public class FallingBomberAI : MonoBehaviour
         // 落下シーケンスが開始した後でなければ、何もしない
         if (!isSequenceStarted) return;
 
-        // 衝突した相手のタグをチェック
-        bool hitPlayer = collision.gameObject.CompareTag("Player");
-        bool hitGround = collision.gameObject.CompareTag("Ground");
-
-        // プレイヤーに衝突した場合
-        if (hitPlayer)
+        // 【条件1】衝突した相手がプレイヤーの場合
+        if (collision.gameObject.CompareTag("Player"))
         {
-            // 先に接触ダメージを与える
-            PlayerMovement player = collision.gameObject.GetComponent<PlayerMovement>();
-            if (player != null)
+            // プレイヤーのスクリプトを取得
+            if (collision.gameObject.TryGetComponent<PlayerMovement>(out var player))
             {
-                Debug.Log("プレイヤーに直接接触！ 接触ダメージを与えます。");
-                player.TakeDamage(explosionDamage); // 爆発ダメージと同じ量のダメージを与える
+                // 先に接触ダメージを与える
+                Debug.Log(gameObject.name + " がプレイヤーに直接接触！ 接触ダメージを与えます。");
+                player.TakeDamage(explosionDamage);
             }
-        }
-
-        // プレイヤーまたは地面に衝突した場合、爆発処理を呼び出す
-        if (hitPlayer || hitGround)
-        {
+            // その後、即座に爆発する
             Explode();
+        }
+        // 【条件2】衝突した相手が地面の場合
+        else if (collision.gameObject.CompareTag("Ground"))
+        {
+            // 地面との接触回数をカウントアップ
+            groundHitCount++;
+            Debug.Log(gameObject.name + " が地面に接触！ (" + groundHitCount + "回目)");
+
+            // 接触回数が2回以上になったら爆発する
+            if (groundHitCount >= 2)
+            {
+                Explode();
+            }
         }
     }
     // --- ★★★ 修正ここまで ★★★ ---
@@ -113,7 +122,7 @@ public class FallingBomberAI : MonoBehaviour
     /// </summary>
     private void Explode()
     {
-        Debug.Log("爆発！");
+        Debug.Log(gameObject.name + " が爆発！");
         if (explosionEffectPrefab != null)
         {
             GameObject effect = Instantiate(explosionEffectPrefab, transform.position, Quaternion.identity);
@@ -127,8 +136,7 @@ public class FallingBomberAI : MonoBehaviour
         {
             if (col.CompareTag("Player"))
             {
-                PlayerMovement player = col.GetComponent<PlayerMovement>();
-                if (player != null)
+                if (col.TryGetComponent<PlayerMovement>(out var player))
                 {
                     // ここで爆風ダメージを与える
                     player.TakeDamage(explosionDamage);
@@ -137,5 +145,15 @@ public class FallingBomberAI : MonoBehaviour
         }
 
         Destroy(gameObject);
+    }
+
+    public void TakeDamage(float damageAmount)
+    {
+        Debug.Log(gameObject.name + " がダメージを受けて誘爆！");
+        if (!isSequenceStarted)
+        {
+            isSequenceStarted = true;
+        }
+        Explode();
     }
 }

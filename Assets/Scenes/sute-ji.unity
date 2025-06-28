@@ -1179,9 +1179,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   target: {fileID: 989944533}
-  distance: 7
-  height: 5
-  smoothSpeed: 5
+  offset: {x: 0, y: 5, z: -7}
 --- !u!1001 &338209007
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1496,6 +1494,10 @@ PrefabInstance:
       propertyPath: jumpForce
       value: 6
       objectReference: {fileID: 0}
+    - target: {fileID: 6531518228940340241, guid: a4fb73d0e0acf5e4ea49e3c0b471491d, type: 3}
+      propertyPath: bomberAbilityEffectPrefab
+      value: 
+      objectReference: {fileID: 3766899822396862032, guid: 42ddda8d4e31b2e42840f0f4f9041789, type: 3}
     - target: {fileID: 9179954536124565612, guid: a4fb73d0e0acf5e4ea49e3c0b471491d, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0.09099257
@@ -2873,6 +2875,67 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 4c5fcf6a4b575364e86be288bb80603b, type: 3}
+--- !u!1001 &948490259
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 4382951360842061402, guid: ef689ef3c0a25294d86b6dca786702e6, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0.82
+      objectReference: {fileID: 0}
+    - target: {fileID: 4382951360842061402, guid: ef689ef3c0a25294d86b6dca786702e6, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 3.05
+      objectReference: {fileID: 0}
+    - target: {fileID: 4382951360842061402, guid: ef689ef3c0a25294d86b6dca786702e6, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 5.01
+      objectReference: {fileID: 0}
+    - target: {fileID: 4382951360842061402, guid: ef689ef3c0a25294d86b6dca786702e6, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4382951360842061402, guid: ef689ef3c0a25294d86b6dca786702e6, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4382951360842061402, guid: ef689ef3c0a25294d86b6dca786702e6, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4382951360842061402, guid: ef689ef3c0a25294d86b6dca786702e6, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4382951360842061402, guid: ef689ef3c0a25294d86b6dca786702e6, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4382951360842061402, guid: ef689ef3c0a25294d86b6dca786702e6, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 180
+      objectReference: {fileID: 0}
+    - target: {fileID: 4382951360842061402, guid: ef689ef3c0a25294d86b6dca786702e6, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4812829929781705668, guid: ef689ef3c0a25294d86b6dca786702e6, type: 3}
+      propertyPath: m_Name
+      value: Bomber
+      objectReference: {fileID: 0}
+    - target: {fileID: 9221128455135537698, guid: ef689ef3c0a25294d86b6dca786702e6, type: 3}
+      propertyPath: explosionEffectPrefab
+      value: 
+      objectReference: {fileID: 3766899822396862032, guid: 42ddda8d4e31b2e42840f0f4f9041789, type: 3}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: ef689ef3c0a25294d86b6dca786702e6, type: 3}
 --- !u!4 &957869367 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 5673792745462629948, guid: 4768a09ec84d6d7418f0feba44dfa4af, type: 3}
@@ -6169,3 +6232,4 @@ SceneRoots:
   - {fileID: 302951735}
   - {fileID: 1346315099}
   - {fileID: 599866730}
+  - {fileID: 948490259}
