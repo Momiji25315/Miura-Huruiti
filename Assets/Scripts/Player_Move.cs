@@ -58,86 +58,60 @@ public class PlayerMovement : MonoBehaviour
     private bool hasNoddyAbility = false;
     private bool controlsDisabled = false;
 
-    // ゲームオブジェクトが生成された直後に一度だけ呼ばれる
     void Awake()
     {
         rb = GetComponent<Rigidbody>();
         playerRenderer = GetComponent<Renderer>();
         if (playerRenderer != null)
         {
-            // ゲーム開始時のマテリアルの色を保存
             originalColor = playerRenderer.material.color;
         }
     }
 
-    // 最初のフレーム更新の前に一度だけ呼ばれる
     void Start()
     {
-        // Shiftキーオブジェクトが設定されていれば、最初は非表示にする
         if (shiftObject != null)
         {
             shiftObject.SetActive(false);
         }
-        // HPを最大値に設定
         currentHealth = maxHealth;
     }
 
-    // 毎フレーム呼ばれる
     void Update()
     {
-        // 1. 接地判定を毎フレーム行う
         CheckIfGrounded();
-
-        // 2. 操作不能状態なら、以降の入力を受け付けない
         if (controlsDisabled) return;
-
-        // 3. 入力受付
         HandleInput();
     }
 
-    // 固定フレームレートで呼び出される（物理演算はこちら）
     void FixedUpdate()
     {
-        // 操作不能状態なら、移動処理を行わない
         if (controlsDisabled) return;
-
-        // 4. 物理的な移動処理
         MoveCharacter();
     }
 
-    /// <summary>
-    /// 接地しているかどうかの判定
-    /// </summary>
     private void CheckIfGrounded()
     {
-        // Physics.CheckSphereを使って、足元に球状の判定領域を作り、地面レイヤーと接触しているかチェック
         isGrounded = Physics.CheckSphere(groundCheck.position, groundCheckRadius, groundLayer);
     }
 
-    /// <summary>
-    /// キーボードやマウスからの入力をまとめて処理
-    /// </summary>
     private void HandleInput()
     {
-        // Noddy能力の発動（左クリック）
+        // Noddy能力の入力
         if (hasNoddyAbility && Input.GetMouseButtonDown(0))
         {
             StartCoroutine(ActivateNoddyAbility());
-            return; // 能力を使ったフレームでは他の操作はしない
+            return;
         }
-
-        // Noddy能力の破棄（右クリック）
         if (hasNoddyAbility && Input.GetMouseButtonDown(1))
         {
             DiscardNoddyAbility();
         }
 
-        // 移動入力
+        // 移動入力（ワールド座標基準）
         float moveX = Input.GetAxisRaw("Horizontal");
         float moveZ = Input.GetAxisRaw("Vertical");
-        Vector3 cameraForward = Vector3.Scale(Camera.main.transform.forward, new Vector3(1, 0, 1)).normalized;
-        Vector3 moveDirection = cameraForward * moveZ + Camera.main.transform.right * moveX;
-        moveInput = moveDirection.normalized;
+        moveInput = new Vector3(moveX, 0f, moveZ).normalized;
 
         // ジャンプ入力
         if (isGrounded && Input.GetKeyDown(KeyCode.Space))
@@ -155,9 +129,6 @@ public class PlayerMovement : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Rigidbodyを使ったキャラクターの移動と回転
-    /// </summary>
     private void MoveCharacter()
     {
         // 移動
@@ -174,12 +145,8 @@ public class PlayerMovement : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// ジャンプ処理
-    /// </summary>
     private void Jump()
     {
-        // Y軸の速度を一度リセットしてから力を加えることで、安定したジャンプ力を得られる
         rb.linearVelocity = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
         rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
     }
@@ -197,7 +164,7 @@ public class PlayerMovement : MonoBehaviour
     {
         hasNoddyAbility = false;
         controlsDisabled = true;
-        rb.linearVelocity = Vector3.zero; // 移動を停止
+        rb.linearVelocity = Vector3.zero;
         Debug.Log("能力発動！ " + abilityDisableDuration + "秒間、操作不能になります...");
         yield return new WaitForSeconds(abilityDisableDuration);
         Heal(abilityHealAmount);
