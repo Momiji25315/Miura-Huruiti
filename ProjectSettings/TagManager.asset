@@ -8,11 +8,12 @@ TagManager:
   - Noddy
   - Suikomi
   - Bomber
+  - Wall
   layers:
   - Default
   - TransparentFX
   - Ignore Raycast
-  - 
+  - Wall
   - Water
   - UI
   - Ground

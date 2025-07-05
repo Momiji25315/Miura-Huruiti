@@ -1,77 +1,53 @@
 using System.Collections;
 using UnityEngine;
 
-// このスクリプトがアタッチされたオブジェクトにはRigidbodyが必須であることを示す
 [RequireComponent(typeof(Rigidbody))]
 public class PlayerMovement : MonoBehaviour
 {
     [Header("体力設定")]
-    [Tooltip("最大HP")]
     public float maxHealth = 100f;
-    [Tooltip("現在のHP（実行中に確認用）")]
     [SerializeField]
     private float currentHealth;
 
     [Header("移動設定")]
-    [Tooltip("キャラクターの通常移動速度")]
     public float moveSpeed = 5.0f;
-    [Tooltip("Shiftキーを押している間の移動速度")]
     public float sprintSpeed = 10.0f;
-    [Tooltip("キャラクターの回転速度")]
     public float rotationSpeed = 10.0f;
 
     [Header("ジャンプ設定")]
-    [Tooltip("ジャンプの強さ")]
     public float jumpForce = 7.0f;
 
     [Header("接地判定")]
-    [Tooltip("地面と認識するレイヤー")]
     public LayerMask groundLayer;
-    [Tooltip("接地判定の中心点（プレイヤーの足元に配置）")]
     public Transform groundCheck;
-    [Tooltip("接地判定の球体の半径")]
     public float groundCheckRadius = 0.2f;
 
     [Header("特殊アクション（Shiftキー）")]
-    [Tooltip("Shiftキーで表示/非表示を切り替える子オブジェクト")]
     public GameObject shiftObject;
-    [Tooltip("Shiftキーを押してからオブジェクトが表示されるまでの時間(秒)")]
     public float shiftDelay = 0.3f;
 
     [Header("回復能力設定（Noddy）")]
-    [Tooltip("能力発動時の回復量")]
     public float abilityHealAmount = 8f;
-    [Tooltip("操作不能時間")]
     public float noddyAbilityDisableDuration = 2.5f;
-    [Tooltip("能力獲得時の色")]
     public Color noddyAbilityColor = Color.magenta;
 
     [Header("爆発能力設定（Bomber）")]
-    [Tooltip("爆発ダメージ")]
     public float bomberAbilityDamage = 15f;
-    [Tooltip("爆発範囲")]
     public float bomberAbilityRadius = 2f;
-    [Tooltip("操作不能時間")]
     public float bomberAbilityDisableDuration = 2.0f;
-    [Tooltip("能力獲得時の色")]
     public Color bomberAbilityColor = Color.black;
-    [Tooltip("爆発能力使用時のエフェクトプレハブ")]
     public GameObject bomberAbilityEffectPrefab;
-    [Tooltip("爆発エフェクトの表示時間")]
     public float bomberAbilityEffectDuration = 1.0f;
 
-    // --- 内部変数 ---
     private Rigidbody rb;
     private Vector3 moveInput;
     private bool isGrounded;
     private Coroutine showObjectCoroutine;
-
     private Renderer playerRenderer;
     private Color originalColor;
     private bool hasNoddyAbility = false;
     private bool hasBomberAbility = false;
     private bool controlsDisabled = false;
-
     private UIManager uiManager;
 
     void Awake()
@@ -86,7 +62,6 @@ public class PlayerMovement : MonoBehaviour
 
     void Start()
     {
-        // シーン内のUIManagerを探して取得（新しいFindAnyObjectByTypeを使用）
         uiManager = FindAnyObjectByType<UIManager>();
         if (uiManager == null)
         {
@@ -122,7 +97,6 @@ public class PlayerMovement : MonoBehaviour
 
     private void HandleInput()
     {
-        // 能力発動（左クリック）
         if (hasNoddyAbility && Input.GetMouseButtonDown(0))
         {
             StartCoroutine(ActivateNoddyAbility());
@@ -134,16 +108,17 @@ public class PlayerMovement : MonoBehaviour
             return;
         }
 
-        // 能力破棄（右クリック）
         if ((hasNoddyAbility || hasBomberAbility) && Input.GetMouseButtonDown(1))
         {
             DiscardAnyAbility();
         }
 
-        // 移動入力（カメラ基準）
-        float moveX = Input.GetAxisRaw("Horizontal");
-        float moveZ = Input.GetAxisRaw("Vertical");
+        // 移動入力（カメラの向きを基準にする）
+        float moveX = Input.GetAxisRaw("Horizontal"); // A, Dキー
+        float moveZ = Input.GetAxisRaw("Vertical");   // W, Sキー
+        // カメラの前方ベクトル（Y軸を無視して水平にする）
         Vector3 cameraForward = Vector3.Scale(Camera.main.transform.forward, new Vector3(1, 0, 1)).normalized;
+        // カメラの向きを基準に、移動方向を計算
         Vector3 moveDirection = cameraForward * moveZ + Camera.main.transform.right * moveX;
         moveInput = moveDirection.normalized;
 
@@ -287,14 +262,10 @@ public class PlayerMovement : MonoBehaviour
     private void Die()
     {
         Debug.Log(gameObject.name + " は力尽きた...");
-
-        // GameManagerにゲームオーバーを通知する
         if (GameManager.Instance != null)
         {
             GameManager.Instance.ShowGameOverScreen();
         }
-
-        // プレイヤーオブジェクトを非表示にする
         gameObject.SetActive(false);
     }
 
